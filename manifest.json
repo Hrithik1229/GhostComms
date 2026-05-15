@@ -1,0 +1,10 @@
+{
+  "name": "GhostComms",
+  "short_name": "Ghost",
+  "description": "Ultrasonic binary messenger — send covert messages through inaudible audio frequencies.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#06060f",
+  "theme_color": "#00e5ff",
+  "icons": []
+}

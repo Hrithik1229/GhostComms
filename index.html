@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostComms — Ultrasonic Messenger</title>
+  <meta name="description" content="Send secret messages through ultrasonic audio frequencies, completely invisible to the human ear.">
+  <meta name="theme-color" content="#060610">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Ambient background layers -->
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow glow-1" aria-hidden="true"></div>
+  <div class="bg-glow glow-2" aria-hidden="true"></div>
+
+  <div class="app-container">
+
+    <!-- ── Header ── -->
+    <header class="app-header">
+      <div class="logo">
+        <div class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="22" cy="22" r="19" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 2.5" class="logo-ring"/>
+            <path d="M13 22 Q17 11 22 22 Q27 33 31 22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="22" cy="22" r="3.5" fill="currentColor"/>
+            <circle cx="22" cy="22" r="7" stroke="currentColor" stroke-width="1" opacity="0.35"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>GhostComms</h1>
+          <span class="logo-tagline">Ultrasonic · Binary · Covert</span>
+        </div>
+      </div>
+      <div class="status-badge idle" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-label" id="statusLabel">Idle</span>
+      </div>
+    </header>
+
+    <!-- ── Two-panel main ── -->
+    <main class="main-content">
+
+      <!-- TRANSMIT panel -->
+      <section class="panel panel-send" aria-label="Transmit message">
+        <div class="panel-header">
+          <div class="panel-icon send-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="panel-title">Transmit</h2>
+            <p class="panel-subtitle">Encode &amp; broadcast via ultrasonic tone</p>
+          </div>
+        </div>
+
+        <div class="textarea-wrapper">
+          <textarea
+            id="message"
+            placeholder="Type your secret message…"
+            maxlength="200"
+            spellcheck="false"
+            aria-label="Message to transmit"
+          ></textarea>
+          <button class="clear-btn" id="clearBtn" onclick="clearMessage()" aria-label="Clear message" title="Clear">✕</button>
+          <div class="char-counter"><span id="charCount">0</span>/200</div>
+        </div>
+
+        <!-- Progress bar (shown during transmission) -->
+        <div class="progress-container" id="progressContainer" style="display:none;">
+          <div class="progress-label">
+            <span>Transmitting…</span>
+            <span id="progressPct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()" aria-label="Transmit message via ultrasonic audio">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span id="sendBtnText">Transmit Message</span>
+        </button>
+
+        <div class="info-chips" aria-label="Encoding key">
+          <div class="chip">
+            <span class="chip-dot chip-cyan"></span>
+            18 kHz = 0
+          </div>
+          <div class="chip">
+            <span class="chip-dot chip-purple"></span>
+            20 kHz = 1
+          </div>
+          <div class="chip">
+            <span class="chip-dot chip-green"></span>
+            Inaudible
+          </div>
+        </div>
+      </section>
+
+      <!-- RECEIVE panel -->
+      <section class="panel panel-receive" aria-label="Receive message">
+        <div class="panel-header">
+          <div class="panel-icon receive-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 013 3v8a3 3 0 01-6 0V4a3 3 0 013-3z"/>
+              <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="panel-title">Receive</h2>
+            <p class="panel-subtitle">Decode ultrasonic signals via microphone</p>
+          </div>
+        </div>
+
+        <!-- Live waveform visualizer -->
+        <div class="visualizer-container" id="visualizerContainer">
+          <canvas id="waveformCanvas" aria-label="Live audio waveform"></canvas>
+          <div class="visualizer-idle" id="visualizerIdle">
+            <svg viewBox="0 0 80 30" fill="none" aria-hidden="true">
+              <path d="M0 15 Q8 5 16 15 Q24 25 32 15 Q40 5 48 15 Q56 25 64 15 Q72 5 80 15"
+                stroke="currentColor" stroke-width="1.5" fill="none"/>
+            </svg>
+            <span>Microphone inactive</span>
+          </div>
+        </div>
+
+        <!-- Decoded output -->
+        <div class="output-box" id="outputBox">
+          <p class="output-placeholder" id="outputPlaceholder">Waiting for signal…</p>
+          <p class="output-text" id="output" aria-live="polite" aria-label="Received message"></p>
+          <button class="copy-btn" id="copyBtn" onclick="copyOutput()" aria-label="Copy received message" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+
+        <div class="listen-buttons">
+          <button class="btn btn-listen" id="listenBtn" onclick="toggleListening()" aria-label="Toggle microphone listening">
+            <span class="btn-icon listen-pulse" id="listenIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 1a3 3 0 013 3v8a3 3 0 01-6 0V4a3 3 0 013-3z"/>
+                <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span id="listenBtnText">Start Listening</span>
+          </button>
+          <button class="btn btn-ghost" onclick="clearOutput()" aria-label="Clear received output">Clear</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Transmission Log ── -->
+    <section class="log-section" aria-label="Transmission log">
+      <div class="log-header">
+        <h2 class="log-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Transmission Log
+        </h2>
+        <button class="btn-text" onclick="clearLog()">Clear log</button>
+      </div>
+      <div class="log-list" id="logList">
+        <div class="log-empty" id="logEmpty">No transmissions yet</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
